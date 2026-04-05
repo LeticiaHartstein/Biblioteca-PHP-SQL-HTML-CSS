@@ -11,9 +11,12 @@ create table Usuario
 (
 	CPF varchar(11) PRIMARY KEY,
     /*Campo para demais informações de usuario (todos devem ser preenchidos)*/
+	CPF_funcionario varchar(11), /**FK*/
 	nome_cliente varchar(50) NOT NULL,
     email_cliente varchar(50) NOT NULL,
-    telefone_cliente varchar(9) NOT NULL
+    telefone_cliente varchar(9) NOT NULL,
+	FOREIGN KEY (CPF_funcionario) references Funcionario(CPF_funcionario)
+
 );
 /*Criando a tabela para Livros conforme montado no modelo lógico*/
 create table Livro 

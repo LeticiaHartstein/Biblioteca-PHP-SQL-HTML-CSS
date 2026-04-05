@@ -211,6 +211,279 @@ INSERT INTO Funcionario(CPF_funcionario, senha) VALUES ("11122233345", "1234"); 
 ```
 <hr>
 <h2 id="PHP">PHP</h2>
-<h3>Arquivo principal</h3>
+<h3>Arquivo conexao</h3>
+<p>responsavel por todas as verificações/mudanças no banco de dados</p>
+
+```php
+<?php 
+function conectarBd ()
+{
+   static $pdo;
+   if (!$pdo)
+    {
+        $info ="mysql:host=localhost;dbname=Biblioteca;charset=utf8mb4"; 
+        $pdo = new PDO( $info , "root", ""); /*Criando a conexão*/
+    }
+        return $pdo;
+}
+/**Insere dados */
+function CadastrarLivro($nome_livro, $autor, $editora) /**Cadastro de livros, as informações que são armazenadas primeiro são recebidas do Consultar_livro.php */
+{
+    $db = conectarBd();
+        $novo_cadastro_livro = [':nome_livro'=>$nome_livro,':autor'=>$autor, ':editora'=> $editora, ':disponivel' => 1 ]; 
+
+        $sql="INSERT INTO livro(nome_livro,editora,autor,disponivel) VALUES (:nome_livro, :editora, :autor , :disponivel)";
+
+        $db->prepare($sql)->execute($novo_cadastro_livro);
+}
+
+function CadastrarCliente($CPF, $nome_cliente, $email_cliente, $telefone_cliente) /**Função para fazer o cadastro de clientes */
+{
+    $db = conectarBd();
+
+    $novo_cliente_usuario = [":CPF" => $CPF, ":nome_cliente" => $nome_cliente, ":email_cliente" => $email_cliente, ":telefone_cliente" => $telefone_cliente];
+    $sql_consulta = "SELECT*FROM usuario WHERE CPF = :CPF";
+    $existencia = $db ->prepare($sql_consulta)-> execute([":CPF" => $CPF]);
+    if (empty($existencia))
+    {
+    $sql = "INSERT INTO usuario(CPF,nome_cliente,email_cliente,telefone_cliente) VALUES (:CPF, :nome_cliente, :email_cliente, :telefone_cliente)"; 
+
+    $db->prepare($sql)->execute($novo_cliente_usuario);
+    }
+    else 
+    {
+        return "existe";
+    }
+}
+function Devolver($CPF,$ID_livro, $devolvido)
+{
+    $bd = conectarBd();
+    
+    if ($devolvido = "1")
+    {
+        $sql = "UPDATE emprestimo SET Devolvido = 1 WHERE ID_livro = :ID_livro and CPF = :CPF and Devolvido = 0 ";
+        return $bd -> prepare($sql) -> execute([":ID_livro"=>$ID_livro, ":CPF" => $CPF]);
+
+        $sql_livro = "UPDATE livro SET disponivel = 1 WHERE ID_livro = :ID_livro ";
+
+         $bd -> prepare($sql_livro) -> execute([":ID_livro"=>$ID_livro]);
+    }
+    
+}
+/**Consulta no banco de dados */
+function ConsultarLivro($nome_livro) 
+{
+    $db = conectarBd();
+
+    $sql = "SELECT ID_livro,editora,autor,disponivel FROM livro WHERE nome_livro LIKE :nome_livro ";
+
+    $resultado = $db -> prepare($sql);
+    $pesquisa = "%".$nome_livro."%"; /**adicionando %% antes e depois do nome do livro, para que possa ser usado na hora da pesquisa no banco de dados  */
+
+
+    /**pesquisa por query por ser mais simples e fácil de passar para outros bancos de dados, não é recomendado para projetos maiores  */
+    $resultado->bindParam(":nome_livro",$pesquisa, PDO::PARAM_STR); /**Substituindo o :nome_livro(qual não tem efeito) usado no $sql pelo nome inserido mais as alterações feitas no pesquisar */
+    $resultado->execute();
+    return $resultado->fetchALL(PDO::FETCH_ASSOC);/**retorna o resultado da pesquisa */
+   
+}
+/*Log In do funcionario**/
+function LogIn($CPF_funcionario, $senha)
+{
+    $db = conectarBd();
+
+    $sql ="SELECT*FROM funcionario WHERE CPF_funcionario = :CPF_funcionario and senha = :senha";
+
+    $resultado = $db -> prepare($sql);
+    $resultado-> execute([":CPF_funcionario"=>$CPF_funcionario, ":senha" => $senha]);
+
+    return $resultado->fetchALL(PDO::FETCH_ASSOC); /**retorna o resultado da pesquisa */
+
+}
+/**Criar empréstimos - verifica se cliente é cadastrado, verifica se tem um emprestimo sem devolução, cria o empréstimo */
+function CriarEmprestimo( $CPF ,$CPF_funcionario,$ID_livro,$data_, $Data_prevista)
+{
+    $db = conectarBd();
+    /**Pesquisar se o usuário existe */
+    $sql_consulta ="SELECT CPF FROM usuario WHERE CPF = :CPF";
+    $resultado_consulta_user = $db -> prepare($sql_consulta);
+    $resultado_consulta_user-> execute([":CPF" => $CPF]); 
+
+    if (!$resultado_consulta_user->fetch()) 
+        {
+         header ("Location: Cadastrar_cliente.php"); /**redireciona para página de cadastros */
+         exit;
+        }
+    /**se o cliente não tiver emprestimo pendente, prosseguir para adicionar o emprestimo dele no sistema */
+      $sql_consulta_emprestimo  ="SELECT * FROM emprestimo WHERE CPF = :CPF and Devolvido =0";
+        $resultado_consulta_emprestimo = $db -> prepare($sql_consulta_emprestimo);
+        $resultado_consulta_emprestimo -> execute([":CPF" => $CPF]);
+
+
+    if ($resultado_consulta_emprestimo->fetch())
+        {
+            header ("Location: Devolver_livro.php"); 
+            exit;
+        }
+    else
+        {
+            $emprestimo_info = [ ":CPF"=> $CPF,":CPF_funcionario"=> $CPF_funcionario, ":ID_livro" => $ID_livro,":data_"=> $data_ , ":Data_prevista" => $Data_prevista, ":Devolvido" => 0];
+
+             $sql = "INSERT INTO emprestimo(CPF, CPF_funcionario, ID_livro, data_, Data_prevista, Devolvido) VALUES (:CPF, :CPF_funcionario, :ID_livro, :data_, :Data_prevista, :Devolvido)";
+             $db -> prepare($sql) -> execute($emprestimo_info);
+
+             $sql_livro ="UPDATE livro SET disponivel = 0 WHERE ID_livro = :ID_livro";
+
+             $db -> prepare($sql_livro) -> execute([":ID_livro"=>$ID_livro]);
+                
+            exit;
+        }
+        
+       
+}
+?>
+
+````
+
 <h3>Conexão com MySQL</h3>
+<p>Toda feita por este trecho:</p>
+<pre>function conectarBd ()
+{
+   static $pdo;
+   if (!$pdo)
+    {
+        $info ="mysql:host=localhost;dbname=Biblioteca;charset=utf8mb4"; 
+        $pdo = new PDO( $info , "root", ""); /*Criando a conexão*/
+    }
+        return $pdo;
+}</pre>
+<p>Todos os demais arquivos apenas passam as informações: </p>
+<ul>
+	<li><a href="https://github.com/LeticiaHartstein/Biblioteca-PHP-SQL-HTML-CSS/blob/main/Consultar_livro.php">Consultar_livro.php</a></li>
+	<li><a heref="https://github.com/LeticiaHartstein/Biblioteca-PHP-SQL-HTML-CSS/blob/main/Paginas/Cadastrar_cliente.php">Paginas/Cadastrar_cliente.php</a></li>
+	<li><a href="https://github.com/LeticiaHartstein/Biblioteca-PHP-SQL-HTML-CSS/blob/main/Paginas/Cadastrar_livro.php">Paginas/Cadastrar_livro.php</a></li>
+	<li><a href="Paginas/Devolver_livro.php">Paginas/Devolver_livro.php</a></li>
+	<li><a href="https://github.com/LeticiaHartstein/Biblioteca-PHP-SQL-HTML-CSS/blob/main/Paginas/Emprestimo.php">Paginas/Emprestimo.php</a></li>
+
+</ul>
 <h2 id="CSS">CSS</h2>
+<p>Fiz o uso de apenas um style, com ajuda de ia o melhorei e fiz alguns outros ajustes a mão</p>
+<p>O style só tem duas classes, sendo elas <i>NavBar</i> e <i>forms</i></p>
+
+```CSS
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    font-family: Arial;
+}
+
+.NavBar ul {
+    /* Layout e Posicionamento */
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    position: fixed;
+    top: 20px; 
+    left: 50%;
+    transform: translateX(-50%);
+    width: fit-content;
+    margin: 0;
+    padding: 12px 40px;
+    background: rgba(255, 255, 255, 0.8); 
+    backdrop-filter: blur(10px); 
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50px; 
+    list-style: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+/* Estilo para os links */
+.NavBar ul li a {
+    text-decoration: none;
+    color: #333;
+    font-family: sans-serif;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+/*quando o usuario passar o mouse por cima*/
+.NavBar ul li a:hover 
+ {
+    color: #007AFF; 
+}
+/* Container do Formulário */
+.forms form ul {
+    list-style: none;
+    padding: 40px;
+    background: #ffffff; /* Fundo sólido para contraste */
+    border: 1px solid #e0e0e0; /* Borda quase imperceptível */
+    border-radius: 24px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05); /* Sombra suave e ampla */
+    
+    max-width: 450px; 
+    margin: 50px auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Controla o espaço entre os campos */
+}
+
+/* campos */
+.forms form ul li 
+{
+    padding: 0;
+}
+
+/* Estilo dos Inputs de Texto/Senha */
+.forms form ul li input:not(input[type="reset"], input[type="submit"]) {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid #eee;
+    border-radius: 12px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-sizing: border-box; /* Garante que o padding não quebre a largura */
+}
+
+.forms form ul li input:focus {
+    outline: none;
+    border-color: #007AFF;
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+}
+
+/* Estilo dos Botões (Submit e Reset) */
+.forms form ul li input[type="submit"],
+.forms form ul li input[type="reset"] {
+    cursor: pointer;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    border: none;
+    transition: transform 0.2s active, background 0.3s;
+    margin-top: 10px;
+}
+
+.forms form ul li input[type="submit"] {
+    background-color: #007AFF;
+    color: white;
+}
+
+.forms form ul li input[type="reset"] {
+    background-color: #f2f2f7;
+    color: #333;
+    margin-left: 10px;
+}
+
+/* Hover dos Botões */
+.forms form ul li input[type="submit"]:hover {
+    background-color: #0056b3;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.forms form ul li input[type="reset"]:hover {
+    background-color: #e5e5ea;
+}
+
+```

@@ -1,0 +1,114 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    font-family: Arial;
+}
+
+.NavBar ul {
+    /* Layout e Posicionamento */
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    position: fixed;
+    top: 20px; 
+    left: 50%;
+    transform: translateX(-50%);
+    width: fit-content;
+    margin: 0;
+    padding: 12px 40px;
+    background: rgba(255, 255, 255, 0.8); 
+    backdrop-filter: blur(10px); 
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50px; 
+    list-style: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+/* Estilo para os links */
+.NavBar ul li a {
+    text-decoration: none;
+    color: #333;
+    font-family: sans-serif;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+/*quando o usuario passar o mouse por cima*/
+.NavBar ul li a:hover 
+ {
+    color: #007AFF; 
+}
+/* Container do Formulário */
+.forms form ul {
+    list-style: none;
+    padding: 40px;
+    background: #ffffff; /* Fundo sólido para contraste */
+    border: 1px solid #e0e0e0; /* Borda quase imperceptível */
+    border-radius: 24px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05); /* Sombra suave e ampla */
+    
+    max-width: 450px; 
+    margin: 50px auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Controla o espaço entre os campos */
+}
+
+/* campos */
+.forms form ul li 
+{
+    padding: 0;
+}
+
+/* Estilo dos Inputs de Texto/Senha */
+.forms form ul li input:not(input[type="reset"], input[type="submit"]) {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid #eee;
+    border-radius: 12px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-sizing: border-box; /* Garante que o padding não quebre a largura */
+}
+
+.forms form ul li input:focus {
+    outline: none;
+    border-color: #007AFF;
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+}
+
+/* Estilo dos Botões (Submit e Reset) */
+.forms form ul li input[type="submit"],
+.forms form ul li input[type="reset"] {
+    cursor: pointer;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    border: none;
+    transition: transform 0.2s active, background 0.3s;
+    margin-top: 10px;
+}
+
+.forms form ul li input[type="submit"] {
+    background-color: #007AFF;
+    color: white;
+}
+
+.forms form ul li input[type="reset"] {
+    background-color: #f2f2f7;
+    color: #333;
+    margin-left: 10px;
+}
+
+/* Hover dos Botões */
+.forms form ul li input[type="submit"]:hover {
+    background-color: #0056b3;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.forms form ul li input[type="reset"]:hover {
+    background-color: #e5e5ea;
+}
